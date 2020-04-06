@@ -9,6 +9,8 @@ import { domain, clientId } from "../auth_config.json";
 // Import the plugin here
 import { Auth0Plugin } from "./auth";
 
+import { DatabasePlugin } from "./database";
+
 // Install the authentication plugin here
 Vue.use(Auth0Plugin, {
   domain,
@@ -21,6 +23,8 @@ Vue.use(Auth0Plugin, {
     );
   }
 });
+
+Vue.use(DatabasePlugin);
 
 Vue.config.productionTip = false;
 
