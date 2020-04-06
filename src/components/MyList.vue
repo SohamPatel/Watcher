@@ -4,8 +4,56 @@
     <v-row class="text-center">
       <v-col cols="md-6">
         <v-card class="pa-2" outlined tile>
-          <v-card-title class="title font-weight-black">Watched</v-card-title>
+          <v-card-title class="title font-weight-black justify-space-between">Watched
+            <v-btn v-show="!editWatched" icon color="success" @click="editWatched = !editWatched"><v-icon>mdi-pencil-plus-outline</v-icon></v-btn>
+            <v-btn v-show="editWatched" icon color="warning" @click="editWatched = !editWatched"><v-icon>mdi-pencil-off-outline</v-icon></v-btn>
+          </v-card-title>
           <v-card-text>
+          <v-autocomplete v-show="editWatched"
+            prepend-icon="mdi-movie-search-outline"
+            :items="watchedResults"
+            item-text="title"
+            label="Search a Film/TV Series Title"
+            :search-input.sync="watchedSearch"
+            :loading="isWatchedLoading">
+
+            <template v-slot:item="{item}" @click="addToList('watched', item)">
+              <v-list-item-avatar class="mr-5" tile height="60">
+                <v-img :src="item.poster_path ? (TMDB_BASE_IMG_URL + item.poster_path) : require('@/assets/placeholder_poster.png')"></v-img>
+              </v-list-item-avatar>
+              <v-list-item-content>
+                <v-list-item-title v-text="item.title || item.name"></v-list-item-title>
+                <v-list-item-subtitle v-text="item.release_date ? item.release_date.substring(0,4) : (item.first_air_date ? item.first_air_date.substring(0,4) : 'N.d')"></v-list-item-subtitle>
+              </v-list-item-content>
+            </template>
+          </v-autocomplete>
+
+      <!-- <v-autocomplete
+        v-model="model"
+        :items="watchedResults"
+        :loading="isWatchedLoading"
+        :search-input.sync="search"
+        hide-details
+        item-text="name"
+        item-value="API"
+        label="Film/TV Series Title"
+        :filter="v => !model.includes(v)"
+        prepend-icon="mdi-database-search">
+
+        <template v-slot:item="{ item }">
+          <v-list-item-avatar class="mr-5" tile height="60">
+            <v-img :src="TMDB_BASE_IMG_URL + item.poster_path"></v-img>
+          </v-list-item-avatar>
+          <v-list-item-content>
+            <v-list-item-title v-text="item.title"></v-list-item-title>
+            <v-list-item-subtitle v-text="item.release_date.substring(0,4)"></v-list-item-subtitle>
+          </v-list-item-content>
+        </template>
+
+      </v-autocomplete> -->
+
+
+            <!-- <v-text-field v-show="editWatched" class="pt-2 pb-2 mt-0" hide-details prepend-icon="mdi-movie-search-outline" single-line placeholder="Find Movies/TV Shows"></v-text-field> -->
             <v-list class="text-left" subheader two-line flat width="100%">
               <v-list-item-group multiple>
                 <v-list-item v-for="(movie, i) in watched" :key="i">
@@ -29,8 +77,30 @@
       </v-col>
       <v-col cols="md-6">
         <v-card class="pa-2" outlined tile>
-          <v-card-title class="title font-weight-black">To Watch</v-card-title>
+          <v-card-title class="title font-weight-black justify-space-between">To Watch
+            <v-btn v-show="!editToWatch" icon color="success" @click="editToWatch = !editToWatch"><v-icon>mdi-pencil-plus-outline</v-icon></v-btn>
+            <v-btn v-show="editToWatch" icon color="warning" @click="editToWatch = !editToWatch"><v-icon>mdi-pencil-off-outline</v-icon></v-btn>
+          </v-card-title>
           <v-card-text>
+            <v-autocomplete v-show="editToWatch"
+              clearable
+              prepend-icon="mdi-movie-search-outline"
+              :items="toWatchResults"
+              item-text="title"
+              label="Search a Film/TV Series Title"
+              :search-input.sync="toWatchSearch"
+              :loading="isToWatchLoading">
+              
+              <template v-slot:item="{item}" @click="addToList('toWatch', item)">
+                <v-list-item-avatar class="mr-5" tile height="60">
+                  <v-img :src="item.poster_path ? (TMDB_BASE_IMG_URL + item.poster_path) : require('@/assets/placeholder_poster.png')"></v-img>
+                </v-list-item-avatar>
+                <v-list-item-content>
+                  <v-list-item-title v-text="item.title || item.name"></v-list-item-title>
+                  <v-list-item-subtitle v-text="item.release_date ? item.release_date.substring(0,4) : (item.first_air_date ? item.first_air_date.substring(0,4) : 'N.d')"></v-list-item-subtitle>
+                </v-list-item-content>
+              </template>
+            </v-autocomplete>
             <v-list class="text-left" subheader two-line flat width="100%">
               <v-list-item-group multiple>
                 <v-list-item v-for="(movie, i) in toWatch" :key="i">
@@ -39,7 +109,7 @@
                   </v-list-item-action> -->
                   
                   <v-list-item-avatar class="mr-5" tile height="60">
-                    <v-img :src="movie.poster" draggable="true"></v-img>
+                    <v-img :src="movie.poster"></v-img>
                   </v-list-item-avatar>
                   
                   <v-list-item-content>
@@ -63,16 +133,65 @@
     name: 'MyList',
 
     data: () => ({
+      TMDB_BASE_IMG_URL: "https://image.tmdb.org/t/p/original",
       settings: [],
       user: null,
+      editWatched: false,
       watched: [],
-      toWatch: []
+      editToWatch: false,
+      toWatch: [],
+      queryUrl: 'https://api.themoviedb.org/3/search/multi?language=en-US&page=1&include_adult=false',
+      isWatchedLoading: false,
+      watchedResults: [],
+      watchedSearch: null,
+      watchedTimer: null,
+      isToWatchLoading: false,
+      toWatchResults: [],
+      toWatchSearch: null,
+      toWatchTimer: null,
+      selectedResult: null,
+      // search: null,
     }),
+
     methods: {
       getUser: function () {
         return this.$auth.user;
       },
+      queryAPI: function (type, search) {
+        // Lazily load input items
+        let apiKey = process.env.VUE_APP_TMDB_API_KEY;
+        let url = this.queryUrl + '&api_key=' + apiKey + '&query=' + search;
+
+        fetch(url)
+        .then(res => res.json())
+        .then(res => {
+          // Check to determine which array to add results to
+          if (type === 'watched') {
+            this.watchedResults = res.results.filter((item) => {
+              return (item.media_type === 'movie' || item.media_type === 'tv') ;
+            });
+          } else {
+            this.toWatchResults = res.results.filter((item) => {
+              return (item.media_type === 'movie' || item.media_type === 'tv') ;
+            });
+          }
+        })
+        .catch(err => {
+          console.log(err)
+        })
+        .finally(() => {
+          // Turn off loading flag
+          if (type === 'watched')
+            this.isWatchedLoading = false;
+          else
+            this.isToWatchLoading = false;
+        });
+      },
+      addToList: function (type, movie) {
+        console.log(movie);
+      }
     },
+
     created () {
       this.user = this.getUser();
       
@@ -81,5 +200,33 @@
         this.toWatch = res.to_watch;
       });
     },
+
+    watch: {
+      watchedSearch: function () {
+        if (!this.watchedSearch) {
+          return;
+        }
+        this.isWatchedLoading = true;
+
+        // Set delay before performing API call
+        if (this.watchedTimer !== null) {
+          clearTimeout(this.watchedTimer);
+        }
+        this.watchedTimer = setTimeout(this.queryAPI('watched', this.watchedSearch), 500);
+      },
+
+      toWatchSearch: function () {
+        if (!this.toWatchSearch) {
+          return;
+        }
+        this.isToWatchLoading = true;
+
+        // Set delay before performing API call
+        if (this.toWatchTimer !== null) {
+          clearTimeout(this.toWatchTimer);
+        }
+        this.toWatchTimer = setTimeout(this.queryAPI('toWatch', this.toWatchSearch), 500);
+      }
+    }
   }
 </script>

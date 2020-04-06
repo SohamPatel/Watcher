@@ -27,7 +27,7 @@
     },
     mounted: function () {
       
-      let apiKey = process.env.VUE_APP_API_KEY;
+      let apiKey = process.env.VUE_APP_TMDB_API_KEY;
       let xmlHttp = new XMLHttpRequest();
       let url = this.TMDB_BASE_TREND_URL + "?api_key=" + apiKey;
       xmlHttp.open( "GET", url, false ); // false for synchronous request
