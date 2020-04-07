@@ -1,0 +1,58 @@
+[ 
+    {
+        "user_id": "ptl.soham@gmail.com",
+        "watched": [
+            {
+                "id": "",
+                "title": "Star Wars: The Rise of Skywalker",
+                "media_type": "movie",
+                "release_date": "2020",
+                "poster_path": "https://image.tmdb.org/t/p/original/db32LaOibwEliAmSL2jjDF6oDdj.jpg"
+            },
+            {
+                "id": "",
+                "title": "Iron Man",
+                "media_type": "movie",
+                "release_date": "2008",
+                "poster_path": "https://image.tmdb.org/t/p/w1280/848chlIWVT41VtAAgyh9bWymAYb.jpg"
+            }
+        ],
+        "to_watch": [
+            {
+                "id": "",
+                "title": "Sonic the Hedgehog",
+                "media_type": "movie",
+                "release_date": "2020",
+                "poster_path": "https://image.tmdb.org/t/p/w1280/aQvJ5WPzZgYVDrxLX4R6cLJCEaQ.jpg"
+            }
+        ]
+    },
+    {
+        "user_id": "234",
+        "watched": [
+            {
+                "id": "",
+                "title": "The Gentlemen",
+                "media_type": "movie",
+                "release_date": "2019",
+                "poster_path": "https://image.tmdb.org/t/p/w1280/jtrhTYB7xSrJxR1vusu99nvnZ1g.jpg"
+            },
+            {
+                "id": "",
+                "title": "Iron Man",
+                "media_type": "movie",
+                "release_date": "2008",
+                "poster_path": "https://image.tmdb.org/t/p/w1280/848chlIWVT41VtAAgyh9bWymAYb.jpg"
+            }
+        ],
+        "to_watch": [
+            {
+                "id": "",
+                "title": "Onward",
+                "media_type": "movie",
+                "release_date": "2020",
+                "poster_path": "https://image.tmdb.org/t/p/w1280/f4aul3FyD3jv3v4bul1IrkWZvzq.jpg"
+            }
+        ]
+    }
+]

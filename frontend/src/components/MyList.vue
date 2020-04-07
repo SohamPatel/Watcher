@@ -9,51 +9,27 @@
             <v-btn v-show="editWatched" icon color="warning" @click="editWatched = !editWatched"><v-icon>mdi-pencil-off-outline</v-icon></v-btn>
           </v-card-title>
           <v-card-text>
-          <v-autocomplete v-show="editWatched"
-            prepend-icon="mdi-movie-search-outline"
-            :items="watchedResults"
-            item-text="title"
-            label="Search a Film/TV Series Title"
-            :search-input.sync="watchedSearch"
-            :loading="isWatchedLoading">
+            <v-autocomplete v-show="editWatched"
+              prepend-icon="mdi-movie-search-outline"
+              :items="watchedResults"
+              item-text="title"
+              label="Search a Film/TV Series Title"
+              :search-input.sync="watchedSearch"
+              :loading="isWatchedLoading">
 
-            <template v-slot:item="{item}" @click="addToList('watched', item)">
-              <v-list-item-avatar class="mr-5" tile height="60">
-                <v-img :src="item.poster_path ? (TMDB_BASE_IMG_URL + item.poster_path) : require('@/assets/placeholder_poster.png')"></v-img>
-              </v-list-item-avatar>
-              <v-list-item-content>
-                <v-list-item-title v-text="item.title || item.name"></v-list-item-title>
-                <v-list-item-subtitle v-text="item.release_date ? item.release_date.substring(0,4) : (item.first_air_date ? item.first_air_date.substring(0,4) : 'N.d')"></v-list-item-subtitle>
-              </v-list-item-content>
-            </template>
-          </v-autocomplete>
+              <template v-slot:item="{item}">
+                <v-list-item @click="addToList('watched', item)">
+                  <v-list-item-avatar class="mr-5" tile height="60">
+                    <v-img :src="item.poster_path ? (TMDB_BASE_IMG_URL + item.poster_path) : require('@/assets/placeholder_poster.png')"></v-img>
+                  </v-list-item-avatar>
+                  <v-list-item-content>
+                    <v-list-item-title v-text="item.title || item.name"></v-list-item-title>
+                    <v-list-item-subtitle v-text="item.release_date ? item.release_date.substring(0,4) : (item.first_air_date ? item.first_air_date.substring(0,4) : 'N.d')"></v-list-item-subtitle>
+                  </v-list-item-content>
+                </v-list-item>
+              </template>
+            </v-autocomplete>
 
-      <!-- <v-autocomplete
-        v-model="model"
-        :items="watchedResults"
-        :loading="isWatchedLoading"
-        :search-input.sync="search"
-        hide-details
-        item-text="name"
-        item-value="API"
-        label="Film/TV Series Title"
-        :filter="v => !model.includes(v)"
-        prepend-icon="mdi-database-search">
-
-        <template v-slot:item="{ item }">
-          <v-list-item-avatar class="mr-5" tile height="60">
-            <v-img :src="TMDB_BASE_IMG_URL + item.poster_path"></v-img>
-          </v-list-item-avatar>
-          <v-list-item-content>
-            <v-list-item-title v-text="item.title"></v-list-item-title>
-            <v-list-item-subtitle v-text="item.release_date.substring(0,4)"></v-list-item-subtitle>
-          </v-list-item-content>
-        </template>
-
-      </v-autocomplete> -->
-
-
-            <!-- <v-text-field v-show="editWatched" class="pt-2 pb-2 mt-0" hide-details prepend-icon="mdi-movie-search-outline" single-line placeholder="Find Movies/TV Shows"></v-text-field> -->
             <v-list class="text-left" subheader two-line flat width="100%">
               <v-list-item-group multiple>
                 <v-list-item v-for="(movie, i) in watched" :key="i">
@@ -62,12 +38,12 @@
                   </v-list-item-action> -->
                   
                   <v-list-item-avatar class="mr-5" tile height="60">
-                    <v-img :src="movie.poster"></v-img>
+                    <v-img :src="movie.poster_path"></v-img>
                   </v-list-item-avatar>
                   
                   <v-list-item-content>
                     <v-list-item-title class="title headline">{{movie.title}}</v-list-item-title>
-                    <v-list-item-subtitle>{{movie.year}}</v-list-item-subtitle>
+                    <v-list-item-subtitle>{{movie.release_date}}</v-list-item-subtitle>
                   </v-list-item-content>
                 </v-list-item>
               </v-list-item-group>
@@ -91,14 +67,16 @@
               :search-input.sync="toWatchSearch"
               :loading="isToWatchLoading">
               
-              <template v-slot:item="{item}" @click="addToList('toWatch', item)">
-                <v-list-item-avatar class="mr-5" tile height="60">
-                  <v-img :src="item.poster_path ? (TMDB_BASE_IMG_URL + item.poster_path) : require('@/assets/placeholder_poster.png')"></v-img>
-                </v-list-item-avatar>
-                <v-list-item-content>
-                  <v-list-item-title v-text="item.title || item.name"></v-list-item-title>
-                  <v-list-item-subtitle v-text="item.release_date ? item.release_date.substring(0,4) : (item.first_air_date ? item.first_air_date.substring(0,4) : 'N.d')"></v-list-item-subtitle>
-                </v-list-item-content>
+              <template v-slot:item="{item}">
+                <v-list-item @click="addToList('toWatch', item)">
+                  <v-list-item-avatar class="mr-5" tile height="60">
+                    <v-img :src="item.poster_path ? (TMDB_BASE_IMG_URL + item.poster_path) : require('@/assets/placeholder_poster.png')"></v-img>
+                  </v-list-item-avatar>
+                  <v-list-item-content>
+                    <v-list-item-title v-text="item.title || item.name"></v-list-item-title>
+                    <v-list-item-subtitle v-text="item.release_date ? item.release_date.substring(0,4) : (item.first_air_date ? item.first_air_date.substring(0,4) : 'N.d')"></v-list-item-subtitle>
+                  </v-list-item-content>
+                </v-list-item>
               </template>
             </v-autocomplete>
             <v-list class="text-left" subheader two-line flat width="100%">
@@ -109,12 +87,12 @@
                   </v-list-item-action> -->
                   
                   <v-list-item-avatar class="mr-5" tile height="60">
-                    <v-img :src="movie.poster"></v-img>
+                    <v-img :src="movie.poster_path"></v-img>
                   </v-list-item-avatar>
                   
                   <v-list-item-content>
                     <v-list-item-title class="title headline">{{movie.title}}</v-list-item-title>
-                    <v-list-item-subtitle>{{movie.year}}</v-list-item-subtitle>
+                    <v-list-item-subtitle>{{movie.release_date}}</v-list-item-subtitle>
                   </v-list-item-content>
                 </v-list-item>
               </v-list-item-group>
@@ -189,6 +167,21 @@
       },
       addToList: function (type, movie) {
         console.log(movie);
+        let item = {
+          id: movie.id,
+          title: movie.title || movie.name,
+          media_type: movie.media_type,
+          poster_path: movie.poster_path ? (this.TMDB_BASE_IMG_URL + movie.poster_path) : require('@/assets/placeholder_poster.png'),
+          release_date: movie.release_date || movie.first_air_date || 'N.d'
+        };
+
+        if (type === 'watched') {
+          this.watched.push(item);
+          // console.log(this.watched);
+        } else {
+          this.toWatch.push(item);
+          // console.log(this.toWatch);
+        }
       }
     },
 
