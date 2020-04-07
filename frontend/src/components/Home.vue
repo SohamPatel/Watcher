@@ -15,6 +15,8 @@
 </template>
 
 <script>
+import Vue from 'vue'
+
   export default {
     name: 'Home',
 
@@ -27,29 +29,33 @@
     },
     mounted: function () {
       
-      let apiKey = process.env.VUE_APP_TMDB_API_KEY;
-      let xmlHttp = new XMLHttpRequest();
-      let url = this.TMDB_BASE_TREND_URL + "?api_key=" + apiKey;
-      xmlHttp.open( "GET", url, false ); // false for synchronous request
-      xmlHttp.send( null );
-      let response = JSON.parse(xmlHttp.responseText);
-      // console.log(response);
-      response.results.forEach(movie => {
-        let currMovie = {
-          "title": movie.title,
-          "poster": this.TMDB_BASE_IMG_URL + movie.backdrop_path,
-          "popularity": movie.popularity
+      const TMDB_TRENGING_URL = this.TMDB_BASE_TREND_URL;
+      const API_KEY = process.env.VUE_APP_TMDB_API_KEY;
+
+      let headers = {
+        params: {
+          api_key: API_KEY
         }
-        this.trendingMovies.push(currMovie);
-      });
-
-      this.trendingMovies.sort((a, b) => {
-        return b.popularity - a.popularity;
-      });
-
-      this.trendingMovies = this.trendingMovies.slice(0,10);
+      }
       
-      // console.log(this.trendingMovies);
+      // GET Tranding Movies
+      Vue.http.get(TMDB_TRENGING_URL, headers).then(response => {
+        response.body.results.forEach(movie => {
+          let currMovie = {
+            "title": movie.title,
+            "poster": this.TMDB_BASE_IMG_URL + movie.backdrop_path,
+            "popularity": movie.popularity
+          }
+          this.trendingMovies.push(currMovie);
+        })
+        
+        this.trendingMovies.sort((a, b) => {
+          return b.popularity - a.popularity;
+        });
+
+        this.trendingMovies = this.trendingMovies.slice(0,10);
+      });
+      
       return;
     }
   }
