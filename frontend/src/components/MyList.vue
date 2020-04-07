@@ -9,13 +9,20 @@
             <v-btn v-show="editWatched" icon color="warning" @click="editWatched = !editWatched"><v-icon>mdi-pencil-off-outline</v-icon></v-btn>
           </v-card-title>
           <v-card-text>
+            <div v-show="showWatchedError" class="deep-orange--text">
+              <v-icon color="deep-orange">mdi-alert-circle-outline</v-icon> Already Exists
+            </div>
+            <!-- <v-alert :value="showWatchedError" text outlined color="deep-orange" icon="mdi-alert-circle-outline" transition="scale-transition">
+              Already Exists
+            </v-alert> -->
             <v-autocomplete v-show="editWatched"
               prepend-icon="mdi-movie-search-outline"
               :items="watchedResults"
               item-text="title"
               label="Search a Film/TV Series Title"
               :search-input.sync="watchedSearch"
-              :loading="isWatchedLoading">
+              :loading="isWatchedLoading"
+              :menu-props="{closeOnContentClick: true}">
 
               <template v-slot:item="{item}">
                 <v-list-item @click="addToList('watched', item)">
@@ -32,10 +39,10 @@
 
             <v-list class="text-left" subheader two-line flat width="100%">
               <v-list-item-group multiple>
-                <v-list-item v-for="(movie, i) in watched" :key="i">
-                  <!-- <v-list-item-action>
-                    <v-checkbox color="primary"></v-checkbox>
-                  </v-list-item-action> -->
+                <v-list-item v-for="(movie, i) in sortedWatched" :key="i">
+                  <v-list-item-action v-show="editWatched">
+                    <v-btn icon color="error"><v-icon>mdi-minus-circle-outline</v-icon></v-btn>
+                  </v-list-item-action>
                   
                   <v-list-item-avatar class="mr-5" tile height="60">
                     <v-img :src="movie.poster_path"></v-img>
@@ -43,7 +50,7 @@
                   
                   <v-list-item-content>
                     <v-list-item-title class="title headline">{{movie.title}}</v-list-item-title>
-                    <v-list-item-subtitle>{{movie.release_date}}</v-list-item-subtitle>
+                    <v-list-item-subtitle>{{formatDate(movie.release_date)}}</v-list-item-subtitle>
                   </v-list-item-content>
                 </v-list-item>
               </v-list-item-group>
@@ -58,6 +65,10 @@
             <v-btn v-show="editToWatch" icon color="warning" @click="editToWatch = !editToWatch"><v-icon>mdi-pencil-off-outline</v-icon></v-btn>
           </v-card-title>
           <v-card-text>
+            <div v-show="showToWatchError" class="deep-orange--text">
+              <v-icon color="deep-orange">mdi-alert-circle-outline</v-icon> Already Exists
+            </div>
+
             <v-autocomplete v-show="editToWatch"
               clearable
               prepend-icon="mdi-movie-search-outline"
@@ -65,7 +76,8 @@
               item-text="title"
               label="Search a Film/TV Series Title"
               :search-input.sync="toWatchSearch"
-              :loading="isToWatchLoading">
+              :loading="isToWatchLoading"
+              :menu-props="{closeOnContentClick: true}">
               
               <template v-slot:item="{item}">
                 <v-list-item @click="addToList('toWatch', item)">
@@ -81,10 +93,10 @@
             </v-autocomplete>
             <v-list class="text-left" subheader two-line flat width="100%">
               <v-list-item-group multiple>
-                <v-list-item v-for="(movie, i) in toWatch" :key="i">
-                  <!-- <v-list-item-action>
-                    <v-checkbox color="primary"></v-checkbox>
-                  </v-list-item-action> -->
+                <v-list-item v-for="(movie, i) in sortedToWatch" :key="i">
+                  <v-list-item-action v-show="editToWatch">
+                    <v-btn icon color="error"><v-icon>mdi-minus-circle-outline</v-icon></v-btn>
+                  </v-list-item-action>
                   
                   <v-list-item-avatar class="mr-5" tile height="60">
                     <v-img :src="movie.poster_path"></v-img>
@@ -92,7 +104,7 @@
                   
                   <v-list-item-content>
                     <v-list-item-title class="title headline">{{movie.title}}</v-list-item-title>
-                    <v-list-item-subtitle>{{movie.release_date}}</v-list-item-subtitle>
+                    <v-list-item-subtitle>{{formatDate(movie.release_date)}}</v-list-item-subtitle>
                   </v-list-item-content>
                 </v-list-item>
               </v-list-item-group>
@@ -111,13 +123,18 @@
     name: 'MyList',
 
     data: () => ({
+      BACKEND_HOST: null,
+      BACKEND_PORT: null,
+      BACKEND_API: null,
       TMDB_BASE_IMG_URL: "https://image.tmdb.org/t/p/original",
       settings: [],
       user: null,
       editWatched: false,
       watched: [],
+      showWatchedError: false,
       editToWatch: false,
       toWatch: [],
+      showToWatchError: false,
       queryUrl: 'https://api.themoviedb.org/3/search/multi?language=en-US&page=1&include_adult=false',
       isWatchedLoading: false,
       watchedResults: [],
@@ -127,7 +144,7 @@
       toWatchResults: [],
       toWatchSearch: null,
       toWatchTimer: null,
-      selectedResult: null,
+      selectedResult: null
       // search: null,
     }),
 
@@ -177,45 +194,85 @@
           release_date: movie.release_date || movie.first_air_date || 'N.d'
         };
 
-        if (type === 'watched') {
-          this.watched.push(item);
-          // console.log(this.watched);
-        } else {
-          this.toWatch.push(item);
-          // console.log(this.toWatch);
+        let headers = {
+          headers: {
+            api_key: this.BACKEND_API_KEY
+          },
         }
+
+        let post_data = {
+          user: this.user.email,
+          movie: item
+        }
+        
+        if (type === 'watched') {
+          Vue.http.post(`http://${this.BACKEND_HOST}:${this.BACKEND_PORT}/api/watched`, post_data, headers).then(() => {
+            this.watched.unshift(item);
+          }).catch(error => {
+            if (error.status === 409) {
+              this.showWatchedError = true;
+              setTimeout(() => {this.showWatchedError = false}, 2000);
+            }
+          });
+
+        } else {
+          Vue.http.post(`http://${this.BACKEND_HOST}:${this.BACKEND_PORT}/api/towatch`, post_data, headers).then(() => {
+            this.toWatch.unshift(item);
+          }).catch(error => {
+            if (error.status === 409) {
+              this.showToWatchError = true;
+              setTimeout(() => {this.showToWatchError = false}, 2000);
+            }
+          });
+        }
+      },
+
+      formatDate: function (date) {
+        const temp = new Date(date);
+        return temp.getFullYear();
       }
     },
 
     created () {
       this.user = this.getUser();
-
-      const HOST = process.env.VUE_APP_BACKEND_HOST;
-      const PORT = process.env.VUE_APP_BACKEND_PORT;
-      const API_KEY = process.env.VUE_APP_WATCHER_BACKEND_API_KEY;
+      this.BACKEND_HOST = process.env.VUE_APP_BACKEND_HOST;
+      this.BACKEND_PORT = process.env.VUE_APP_BACKEND_PORT;
+      this.BACKEND_API_KEY = process.env.VUE_APP_WATCHER_BACKEND_API_KEY;
 
       let headers = {
+        headers: {
+          api_key: this.BACKEND_API_KEY
+        },
         params: {
           user: this.user.email,
-          api_key: API_KEY
         }
       }
       
       // GET Watched List
-      Vue.http.get(`http://${HOST}:${PORT}/api/watched`, headers).then(response => {
+      Vue.http.get(`http://${this.BACKEND_HOST}:${this.BACKEND_PORT}/api/watched`, headers).then(response => {
         console.log(response);
         this.watched = response.body.watched;
       });
 
       // GET ToWatch List
-      Vue.http.get(`http://${HOST}:${PORT}/api/towatch`, headers).then(response => {
+      Vue.http.get(`http://${this.BACKEND_HOST}:${this.BACKEND_PORT}/api/towatch`, headers).then(response => {
         console.log(response);
         this.toWatch = response.body.towatch;
       });
-      // apiBus.getUserData(this.user.email).then(res => {
-      //   this.watched = res.watched;
-      //   this.toWatch = res.to_watch;
-      // });
+    },
+
+    computed: {
+      sortedWatched () {
+        return this.watched.slice().sort(function (a, b) {
+          return new Date(b.date_added) - new Date(a.date_added);
+        });
+      },
+
+      sortedToWatch () {
+        return this.toWatch.slice().sort(function (a, b) {
+          return new Date(b.date_added) - new Date(a.date_added);
+        });
+      }
     },
 
     watch: {
