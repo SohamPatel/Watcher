@@ -105,7 +105,7 @@
 </template>
 
 <script>
-  import Vue from "vue";
+  import Vue from "vue"
 
   export default {
     name: 'MyList',
@@ -135,6 +135,7 @@
       getUser: function () {
         return this.$auth.user;
       },
+
       queryAPI: function (type, search) {
         // Lazily load input items
         let apiKey = process.env.VUE_APP_TMDB_API_KEY;
@@ -165,6 +166,7 @@
             this.isToWatchLoading = false;
         });
       },
+
       addToList: function (type, movie) {
         console.log(movie);
         let item = {
@@ -187,11 +189,33 @@
 
     created () {
       this.user = this.getUser();
+
+      const HOST = process.env.VUE_APP_BACKEND_HOST;
+      const PORT = process.env.VUE_APP_BACKEND_PORT;
+      const API_KEY = process.env.VUE_APP_WATCHER_BACKEND_API_KEY;
+
+      let headers = {
+        params: {
+          user: this.user.email,
+          api_key: API_KEY
+        }
+      }
       
-      Vue.getUserData(this.user.email).then(res => {
-        this.watched = res.watched;
-        this.toWatch = res.to_watch;
+      // GET Watched List
+      Vue.http.get(`http://${HOST}:${PORT}/api/watched`, headers).then(response => {
+        console.log(response);
+        this.watched = response.body.watched;
       });
+
+      // GET ToWatch List
+      Vue.http.get(`http://${HOST}:${PORT}/api/towatch`, headers).then(response => {
+        console.log(response);
+        this.toWatch = response.body.towatch;
+      });
+      // apiBus.getUserData(this.user.email).then(res => {
+      //   this.watched = res.watched;
+      //   this.toWatch = res.to_watch;
+      // });
     },
 
     watch: {
