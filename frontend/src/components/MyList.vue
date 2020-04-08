@@ -9,12 +9,12 @@
             <v-btn v-show="editWatched" icon color="warning" @click="editWatched = !editWatched"><v-icon>mdi-pencil-off-outline</v-icon></v-btn>
           </v-card-title>
           <v-card-text>
-            <div v-show="showWatchedError" class="deep-orange--text">
-              <v-icon color="deep-orange">mdi-alert-circle-outline</v-icon> Already Exists
+            <div v-show="showWatchedExistsError" class="deep-orange--text">
+              <v-icon color="deep-orange">mdi-alert-circle-outline</v-icon> Already exists
             </div>
-            <!-- <v-alert :value="showWatchedError" text outlined color="deep-orange" icon="mdi-alert-circle-outline" transition="scale-transition">
-              Already Exists
-            </v-alert> -->
+            <div v-show="showWatchedNotFoundError" class="deep-orange--text">
+              <v-icon color="deep-orange">mdi-alert-circle-outline</v-icon> Not found, please refresh page
+            </div>
             <v-autocomplete v-show="editWatched"
               prepend-icon="mdi-movie-search-outline"
               :items="watchedResults"
@@ -40,7 +40,7 @@
             <v-list class="text-left" subheader two-line flat width="100%">
               <v-list-item-group multiple>
                 <draggable tag="ul" ghost-class="moving-card" group="all-items" :list="watched" :animation="200" v-on:change="listChange('watched', $event)">
-                  <v-list-item v-for="movie in watched" :key="movie.id">
+                  <v-list-item v-for="(movie, i) in getWatchedList" :key="i">
                     <v-list-item-action v-show="editWatched">
                       <v-btn icon color="error" @click="removeFromList('watched', movie.id)"><v-icon>mdi-minus-circle-outline</v-icon></v-btn>
                     </v-list-item-action>
@@ -67,10 +67,12 @@
             <v-btn v-show="editToWatch" icon color="warning" @click="editToWatch = !editToWatch"><v-icon>mdi-pencil-off-outline</v-icon></v-btn>
           </v-card-title>
           <v-card-text>
-            <div v-show="showToWatchError" class="deep-orange--text">
+            <div v-show="showToWatchExistsError" class="deep-orange--text">
               <v-icon color="deep-orange">mdi-alert-circle-outline</v-icon> Already Exists
             </div>
-
+            <div v-show="showToWatchNotFoundError" class="deep-orange--text">
+              <v-icon color="deep-orange">mdi-alert-circle-outline</v-icon> Not found, please refresh page
+            </div>
             <v-autocomplete v-show="editToWatch"
               clearable
               prepend-icon="mdi-movie-search-outline"
@@ -82,7 +84,7 @@
               :menu-props="{closeOnContentClick: true}">
               
               <template v-slot:item="{item}">
-                <v-list-item @click="addToList('toWatch', item)">
+                <v-list-item @click="addToList('towatch', item)">
                   <v-list-item-avatar class="mr-5" tile height="60">
                     <v-img :src="item.poster_path ? (TMDB_BASE_IMG_URL + item.poster_path) : require('@/assets/placeholder_poster.png')"></v-img>
                   </v-list-item-avatar>
@@ -96,9 +98,9 @@
             <v-list class="text-left" subheader two-line flat width="100%">
               <v-list-item-group multiple>
                 <draggable tag="ul" ghost-class="moving-card" group="all-items" :list="toWatch" :animation="200" v-on:change="listChange('towatch', $event)">
-                  <v-list-item v-for="movie in toWatch" :key="movie.id">
+                  <v-list-item v-for="(movie, i) in getToWatchList" :key="i">
                     <v-list-item-action v-show="editToWatch">
-                      <v-btn icon color="error" @click="removeFromList('toWatch', movie.id)"><v-icon>mdi-minus-circle-outline</v-icon></v-btn>
+                      <v-btn icon color="error" @click="removeFromList('towatch', movie.id)"><v-icon>mdi-minus-circle-outline</v-icon></v-btn>
                     </v-list-item-action>
                     
                     <v-list-item-avatar class="mr-5" tile height="60">
@@ -138,10 +140,12 @@
       user: null,
       editWatched: false,
       watched: [],
-      showWatchedError: false,
+      showWatchedExistsError: false,
+      showWatchedNotFoundError: false,
       editToWatch: false,
       toWatch: [],
-      showToWatchError: false,
+      showToWatchExistsError: false,
+      showToWatchNotFoundError: false,
       queryUrl: 'https://api.themoviedb.org/3/search/multi?language=en-US&page=1&include_adult=false',
       isWatchedLoading: false,
       watchedResults: [],
@@ -191,8 +195,17 @@
         });
       },
 
-      addToList: function (type, movie) {
-        console.log(movie);
+      addToList: function (type, movie, listChange=false) {
+        // Check if already exists in watched or towatch lists
+        if ((this.watched.some(e => e.id === movie.id) === true) || (this.toWatch.some(e => e.id === movie.id) === true)) {
+          if (type === 'watched')
+            this.watchedExists();
+          else if (type === 'towatch')
+            this.toWatchExists();
+          return;
+        }
+        
+        // console.log(movie);
         let item = {
           id: movie.id,
           title: movie.title || movie.name,
@@ -215,26 +228,36 @@
         if (type === 'watched') {
           Vue.http.post(`http://${this.BACKEND_HOST}:${this.BACKEND_PORT}/api/watched`, post_data, headers).then(() => {
             // Don't add if the item was moved from towatch to watched
-            if (!this.watched.contains(item)) {
+            if (this.watched.some(e => e.id === item.id) === false) {
               this.watched.unshift(item);
             }
           }).catch(error => {
             if (error.status === 409) {
-              this.showWatchedError = true;
-              setTimeout(() => {this.showWatchedError = false}, 2000);
+              this.watchedExists();
+              // Remove if already exists and new one added
+              if (listChange) {
+                let index = this.watched.findIndex(e => e.id === item.id);
+                console.log(index);
+                this.watched.splice(index, 1);
+              }
             }
           });
 
         } else if (type === 'towatch') {
           Vue.http.post(`http://${this.BACKEND_HOST}:${this.BACKEND_PORT}/api/towatch`, post_data, headers).then(() => {
             // Don't add if the item was moved from toWatch to watched
-            if (!this.toWatch.contains(item)) {
+            if (this.toWatch.some(e => e.id === item.id) === false) {
               this.toWatch.unshift(item);
             }
           }).catch(error => {
             if (error.status === 409) {
-              this.showToWatchError = true;
-              setTimeout(() => {this.showToWatchError = false}, 2000);
+              this.toWatchExists();
+             // Remove if already exists and new one added
+              if (listChange) {
+                let index = this.toWatch.findIndex(e => e.id === item.id);
+                console.log(index);
+                this.toWatch.splice(index, 1);
+              }
             }
           });
         }
@@ -259,8 +282,7 @@
             });
           }).catch(error => {
             if (error.status === 404) {
-              this.showWatchedError = true;
-              setTimeout(() => {this.showWatchedError = false}, 2000);
+              this.watchedNotFound();
             }
           });
 
@@ -271,20 +293,41 @@
             });
           }).catch(error => {
             if (error.status === 404) {
-              this.showToWatchError = true;
-              setTimeout(() => {this.showToWatchError = false}, 2000);
+              this.toWatchNotFound();
             }
           });
         }
       },
 
-      listChange: function(type, event) {
+      listChange: function (type, event) {
         console.log(event);
         if (event.removed) {
           this.removeFromList(type, event.removed.element.id);
         } else if (event.added) {
-          this.addToList(type, event.added.element);
+          if (type === 'watched' || type === 'towatch') {
+            this.addToList(type, event.added.element, true);
+          }
         }
+      },
+
+      watchedExists: function () {
+        this.showWatchedExistsError = true;
+        setTimeout(() => {this.showWatchedExistsError = false}, 2000);
+      },
+
+      toWatchExists: function () {
+        this.showToWatchExistsError = true;
+        setTimeout(() => {this.showToWatchExistsError = false}, 2000);
+      },
+
+      watchedNotFound: function () {
+        this.showWatchedNotFoundError = true;
+        setTimeout(() => {this.showWatchedNotFoundError = false}, 2000);
+      },
+
+      toWatchNotFound: function () {
+        this.showToWatchNotFoundError = true;
+        setTimeout(() => {this.showToWatchNotFoundError = false}, 2000);
       },
 
       formatDate: function (date) {
@@ -310,7 +353,7 @@
       
       // GET Watched List
       Vue.http.get(`http://${this.BACKEND_HOST}:${this.BACKEND_PORT}/api/watched`, headers).then(response => {
-        console.log(response);
+        // console.log(response);
         this.watched = response.body.watched;
         this.watched.sort(function (a, b) {
           return new Date(b.date_added) - new Date(a.date_added);
@@ -319,7 +362,7 @@
 
       // GET ToWatch List
       Vue.http.get(`http://${this.BACKEND_HOST}:${this.BACKEND_PORT}/api/towatch`, headers).then(response => {
-        console.log(response);
+        // console.log(response);
         this.toWatch = response.body.towatch;
         this.toWatch.sort(function (a, b) {
           return new Date(b.date_added) - new Date(a.date_added);
@@ -336,6 +379,12 @@
           ghostClass: "ghost"
         };
       },
+      getWatchedList: function () {
+        return this.watched;
+      },
+      getToWatchList: function () {
+        return this.toWatch;
+      }
     },
 
     watch: {
@@ -362,7 +411,7 @@
         if (this.toWatchTimer !== null) {
           clearTimeout(this.toWatchTimer);
         }
-        this.toWatchTimer = setTimeout(this.queryAPI('toWatch', this.toWatchSearch), 500);
+        this.toWatchTimer = setTimeout(this.queryAPI('towatch', this.toWatchSearch), 500);
       }
     }
   }
