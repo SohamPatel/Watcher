@@ -85,7 +85,7 @@ app.post('/api/watched', (request, response) => {
     let moviesQuery = `INSERT OR IGNORE INTO movies(id, title, media_type, release_date, poster_path) values(?,?,?,?,?)`;
     let moviesValues = [movie.id, movie.title, movie.media_type, movie.release_date, movie.poster_path];
 
-    db.run(moviesQuery, moviesValues, (err) => {
+    db.run(moviesQuery, moviesValues, function (err) {
         if (err) {
             response.status(500);
             throw err;
@@ -105,6 +105,34 @@ app.post('/api/watched', (request, response) => {
                 response.sendStatus(409);
             }
         });
+    })
+})
+
+app.delete('/api/watched', (request, response) => {
+    let user = request.body.user;
+    let movie_id = request.body.movie_id;
+
+    if (!user) {
+        response.status(500).json({
+            error: 'User parameter not found.'
+        })
+        return;
+    }
+    
+    let watchedQuery = `DELETE FROM user_watched
+                        WHERE user = ? AND movie = ?`;
+    let watchedValues = [user, movie_id];
+
+    db.run(watchedQuery, watchedValues, function (err) {
+        if (err) {
+            response.status(500);
+            throw err;
+        }
+        if (this.changes > 0) {
+            response.sendStatus(200);
+        } else {
+            response.sendStatus(404);
+        }
     })
 })
 
@@ -171,6 +199,34 @@ app.post('/api/towatch', (request, response) => {
                 response.sendStatus(409);
             }
         });
+    })
+})
+
+app.delete('/api/towatch', (request, response) => {
+    let user = request.body.user;
+    let movie_id = request.body.movie_id;
+
+    if (!user) {
+        response.status(500).json({
+            error: 'User parameter not found.'
+        })
+        return;
+    }
+    
+    let toWatchQuery = `DELETE FROM user_towatch
+                        WHERE user = ? AND movie = ?`;
+    let toWatchValues = [user, movie_id];
+
+    db.run(toWatchQuery, toWatchValues, function (err) {
+        if (err) {
+            response.status(500);
+            throw err;
+        }
+        if (this.changes > 0) {
+            response.sendStatus(200);
+        } else {
+            response.sendStatus(404);
+        }
     })
 })
 

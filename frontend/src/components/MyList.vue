@@ -39,20 +39,22 @@
 
             <v-list class="text-left" subheader two-line flat width="100%">
               <v-list-item-group multiple>
-                <v-list-item v-for="(movie, i) in sortedWatched" :key="i">
-                  <v-list-item-action v-show="editWatched">
-                    <v-btn icon color="error"><v-icon>mdi-minus-circle-outline</v-icon></v-btn>
-                  </v-list-item-action>
-                  
-                  <v-list-item-avatar class="mr-5" tile height="60">
-                    <v-img :src="movie.poster_path"></v-img>
-                  </v-list-item-avatar>
-                  
-                  <v-list-item-content>
-                    <v-list-item-title class="title headline">{{movie.title}}</v-list-item-title>
-                    <v-list-item-subtitle>{{formatDate(movie.release_date)}}</v-list-item-subtitle>
-                  </v-list-item-content>
-                </v-list-item>
+                <draggable tag="ul" ghost-class="moving-card" group="all-items" :list="watched" :animation="200" v-on:change="listChange('watched', $event)">
+                  <v-list-item v-for="movie in watched" :key="movie.id">
+                    <v-list-item-action v-show="editWatched">
+                      <v-btn icon color="error" @click="removeFromList('watched', movie.id)"><v-icon>mdi-minus-circle-outline</v-icon></v-btn>
+                    </v-list-item-action>
+                    
+                    <v-list-item-avatar class="mr-5" tile height="60">
+                      <v-img :src="movie.poster_path"></v-img>
+                    </v-list-item-avatar>
+                    
+                    <v-list-item-content>
+                      <v-list-item-title class="title headline">{{movie.title}}</v-list-item-title>
+                      <v-list-item-subtitle>{{formatDate(movie.release_date)}} - {{movie.id}}</v-list-item-subtitle>
+                    </v-list-item-content>
+                  </v-list-item>
+                </draggable>
               </v-list-item-group>
             </v-list>
           </v-card-text>
@@ -93,20 +95,22 @@
             </v-autocomplete>
             <v-list class="text-left" subheader two-line flat width="100%">
               <v-list-item-group multiple>
-                <v-list-item v-for="(movie, i) in sortedToWatch" :key="i">
-                  <v-list-item-action v-show="editToWatch">
-                    <v-btn icon color="error"><v-icon>mdi-minus-circle-outline</v-icon></v-btn>
-                  </v-list-item-action>
-                  
-                  <v-list-item-avatar class="mr-5" tile height="60">
-                    <v-img :src="movie.poster_path"></v-img>
-                  </v-list-item-avatar>
-                  
-                  <v-list-item-content>
-                    <v-list-item-title class="title headline">{{movie.title}}</v-list-item-title>
-                    <v-list-item-subtitle>{{formatDate(movie.release_date)}}</v-list-item-subtitle>
-                  </v-list-item-content>
-                </v-list-item>
+                <draggable tag="ul" ghost-class="moving-card" group="all-items" :list="toWatch" :animation="200" v-on:change="listChange('towatch', $event)">
+                  <v-list-item v-for="movie in toWatch" :key="movie.id">
+                    <v-list-item-action v-show="editToWatch">
+                      <v-btn icon color="error" @click="removeFromList('toWatch', movie.id)"><v-icon>mdi-minus-circle-outline</v-icon></v-btn>
+                    </v-list-item-action>
+                    
+                    <v-list-item-avatar class="mr-5" tile height="60">
+                      <v-img :src="movie.poster_path"></v-img>
+                    </v-list-item-avatar>
+                    
+                    <v-list-item-content>
+                      <v-list-item-title class="title headline">{{movie.title}}</v-list-item-title>
+                      <v-list-item-subtitle>{{formatDate(movie.release_date)}} - {{movie.id}}</v-list-item-subtitle>
+                    </v-list-item-content>
+                  </v-list-item>
+                </draggable>
               </v-list-item-group>
             </v-list>
           </v-card-text>
@@ -118,10 +122,13 @@
 
 <script>
   import Vue from "vue"
+  import Draggable from "vuedraggable";
 
   export default {
     name: 'MyList',
-
+    components: {
+      Draggable
+    },
     data: () => ({
       BACKEND_HOST: null,
       BACKEND_PORT: null,
@@ -207,7 +214,10 @@
         
         if (type === 'watched') {
           Vue.http.post(`http://${this.BACKEND_HOST}:${this.BACKEND_PORT}/api/watched`, post_data, headers).then(() => {
-            this.watched.unshift(item);
+            // Don't add if the item was moved from towatch to watched
+            if (!this.watched.contains(item)) {
+              this.watched.unshift(item);
+            }
           }).catch(error => {
             if (error.status === 409) {
               this.showWatchedError = true;
@@ -215,15 +225,65 @@
             }
           });
 
-        } else {
+        } else if (type === 'towatch') {
           Vue.http.post(`http://${this.BACKEND_HOST}:${this.BACKEND_PORT}/api/towatch`, post_data, headers).then(() => {
-            this.toWatch.unshift(item);
+            // Don't add if the item was moved from toWatch to watched
+            if (!this.toWatch.contains(item)) {
+              this.toWatch.unshift(item);
+            }
           }).catch(error => {
             if (error.status === 409) {
               this.showToWatchError = true;
               setTimeout(() => {this.showToWatchError = false}, 2000);
             }
           });
+        }
+      },
+
+      removeFromList: function (type, movie_id) {
+        let headers = {
+          headers: {
+            api_key: this.BACKEND_API_KEY
+          },
+        }
+
+        let remove_data = {
+          user: this.user.email,
+          movie_id: movie_id
+        }
+        
+        if (type === 'watched') {
+          Vue.http.delete(`http://${this.BACKEND_HOST}:${this.BACKEND_PORT}/api/watched`, {body: remove_data, headers: headers.headers}).then(() => {
+            this.watched = this.watched.filter((movie) => {
+              return movie.id !== movie_id;
+            });
+          }).catch(error => {
+            if (error.status === 404) {
+              this.showWatchedError = true;
+              setTimeout(() => {this.showWatchedError = false}, 2000);
+            }
+          });
+
+        } else if (type === 'towatch') {
+          Vue.http.delete(`http://${this.BACKEND_HOST}:${this.BACKEND_PORT}/api/towatch`, {body: remove_data, headers: headers.headers}).then(() => {
+            this.toWatch = this.toWatch.filter((movie) => {
+              return movie.id !== movie_id;
+            });
+          }).catch(error => {
+            if (error.status === 404) {
+              this.showToWatchError = true;
+              setTimeout(() => {this.showToWatchError = false}, 2000);
+            }
+          });
+        }
+      },
+
+      listChange: function(type, event) {
+        console.log(event);
+        if (event.removed) {
+          this.removeFromList(type, event.removed.element.id);
+        } else if (event.added) {
+          this.addToList(type, event.added.element);
         }
       },
 
@@ -252,27 +312,30 @@
       Vue.http.get(`http://${this.BACKEND_HOST}:${this.BACKEND_PORT}/api/watched`, headers).then(response => {
         console.log(response);
         this.watched = response.body.watched;
+        this.watched.sort(function (a, b) {
+          return new Date(b.date_added) - new Date(a.date_added);
+        });
       });
 
       // GET ToWatch List
       Vue.http.get(`http://${this.BACKEND_HOST}:${this.BACKEND_PORT}/api/towatch`, headers).then(response => {
         console.log(response);
         this.toWatch = response.body.towatch;
+        this.toWatch.sort(function (a, b) {
+          return new Date(b.date_added) - new Date(a.date_added);
+        });
       });
     },
 
     computed: {
-      sortedWatched () {
-        return this.watched.slice().sort(function (a, b) {
-          return new Date(b.date_added) - new Date(a.date_added);
-        });
+      dragOptions() {
+        return {
+          animation: 200,
+          group: "dragGroup",
+          disabled: false,
+          ghostClass: "ghost"
+        };
       },
-
-      sortedToWatch () {
-        return this.toWatch.slice().sort(function (a, b) {
-          return new Date(b.date_added) - new Date(a.date_added);
-        });
-      }
     },
 
     watch: {
@@ -304,3 +367,12 @@
     }
   }
 </script>
+
+<style scoped>
+.moving-card {
+  opacity: 0.5;
+  background-color: rgba(128, 128, 128, 0.1);
+  border: solid 1px;
+  border: rgba(0, 0, 255, 0.5); 
+}
+</style>
