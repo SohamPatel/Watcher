@@ -17,11 +17,12 @@
             </div>
             <v-autocomplete v-show="editWatched"
               prepend-icon="mdi-movie-search-outline"
-              :items="watchedResults"
+              :items="getWatchedResults"
               item-text="title"
               label="Search a Film/TV Series Title"
               :search-input.sync="watchedSearch"
               :loading="isWatchedLoading"
+              autofocus no-filter
               :menu-props="{closeOnContentClick: true}">
 
               <template v-slot:item="{item}">
@@ -31,7 +32,11 @@
                   </v-list-item-avatar>
                   <v-list-item-content>
                     <v-list-item-title v-text="item.title || item.name"></v-list-item-title>
-                    <v-list-item-subtitle v-text="item.release_date ? item.release_date.substring(0,4) : (item.first_air_date ? item.first_air_date.substring(0,4) : 'N.d')"></v-list-item-subtitle>
+                    <v-list-item-subtitle>
+                      <v-icon v-if="item.media_type !== 'movie'" class="pr-2">mdi-television-box</v-icon>
+                      <v-icon v-if="item.media_type === 'movie'" class="pr-2">mdi-play-box-outline</v-icon>
+                      {{ item.release_date ? item.release_date.substring(0,4) : (item.first_air_date ? item.first_air_date.substring(0,4) : 'N.d') }}
+                    </v-list-item-subtitle>
                   </v-list-item-content>
                 </v-list-item>
               </template>
@@ -51,7 +56,11 @@
                     
                     <v-list-item-content>
                       <v-list-item-title class="title headline">{{movie.title}}</v-list-item-title>
-                      <v-list-item-subtitle>{{formatDate(movie.release_date)}} - {{movie.id}}</v-list-item-subtitle>
+                      <v-list-item-subtitle>
+                        <v-icon v-if="movie.media_type !== 'movie'" class="pr-2">mdi-television-box</v-icon>
+                        <v-icon v-if="movie.media_type === 'movie'" class="pr-2">mdi-play-box-outline</v-icon>
+                        {{formatDate(movie.release_date)}}
+                      </v-list-item-subtitle>
                     </v-list-item-content>
                   </v-list-item>
                 </draggable>
@@ -81,6 +90,7 @@
               label="Search a Film/TV Series Title"
               :search-input.sync="toWatchSearch"
               :loading="isToWatchLoading"
+              autofocus no-filter
               :menu-props="{closeOnContentClick: true}">
               
               <template v-slot:item="{item}">
@@ -90,7 +100,11 @@
                   </v-list-item-avatar>
                   <v-list-item-content>
                     <v-list-item-title v-text="item.title || item.name"></v-list-item-title>
-                    <v-list-item-subtitle v-text="item.release_date ? item.release_date.substring(0,4) : (item.first_air_date ? item.first_air_date.substring(0,4) : 'N.d')"></v-list-item-subtitle>
+                    <v-list-item-subtitle>
+                      <v-icon v-if="item.media_type !== 'movie'" class="pr-2">mdi-television-box</v-icon>
+                      <v-icon v-if="item.media_type === 'movie'" class="pr-2">mdi-play-box-outline</v-icon>
+                      {{ item.release_date ? item.release_date.substring(0,4) : (item.first_air_date ? item.first_air_date.substring(0,4) : 'N.d') }}
+                    </v-list-item-subtitle>
                   </v-list-item-content>
                 </v-list-item>
               </template>
@@ -109,7 +123,11 @@
                     
                     <v-list-item-content>
                       <v-list-item-title class="title headline">{{movie.title}}</v-list-item-title>
-                      <v-list-item-subtitle>{{formatDate(movie.release_date)}} - {{movie.id}}</v-list-item-subtitle>
+                      <v-list-item-subtitle>
+                        <v-icon v-if="movie.media_type !== 'movie'" class="pr-2">mdi-television-box</v-icon>
+                        <v-icon v-if="movie.media_type === 'movie'" class="pr-2">mdi-play-box-outline</v-icon>
+                        {{formatDate(movie.release_date)}}
+                      </v-list-item-subtitle>
                     </v-list-item-content>
                   </v-list-item>
                 </draggable>
@@ -154,9 +172,7 @@
       isToWatchLoading: false,
       toWatchResults: [],
       toWatchSearch: null,
-      toWatchTimer: null,
-      selectedResult: null
-      // search: null,
+      toWatchTimer: null
     }),
 
     methods: {
@@ -196,8 +212,9 @@
       },
 
       addToList: function (type, movie, listChange=false) {
-        // Check if already exists in watched or towatch lists
-        if ((this.watched.some(e => e.id === movie.id) === true) || (this.toWatch.some(e => e.id === movie.id) === true)) {
+        // Check if already exists in watched or towatch lists before adding
+        if (((this.watched.some(e => e.id === movie.id) === true) || (this.toWatch.some(e => e.id === movie.id) === true)) 
+              && listChange === false) {
           if (type === 'watched')
             this.watchedExists();
           else if (type === 'towatch')
@@ -379,9 +396,18 @@
           ghostClass: "ghost"
         };
       },
+      getWatchedResults: function () {
+        return this.watchedResults;
+      },
+
+      getToWatchResults: function () {
+        return this.toWatchResults;
+      },
+
       getWatchedList: function () {
         return this.watched;
       },
+
       getToWatchList: function () {
         return this.toWatch;
       }
@@ -398,7 +424,7 @@
         if (this.watchedTimer !== null) {
           clearTimeout(this.watchedTimer);
         }
-        this.watchedTimer = setTimeout(this.queryAPI('watched', this.watchedSearch), 500);
+        this.watchedTimer = setTimeout(this.queryAPI('watched', this.watchedSearch), 1000);
       },
 
       toWatchSearch: function () {
@@ -411,7 +437,7 @@
         if (this.toWatchTimer !== null) {
           clearTimeout(this.toWatchTimer);
         }
-        this.toWatchTimer = setTimeout(this.queryAPI('towatch', this.toWatchSearch), 500);
+        this.toWatchTimer = setTimeout(this.queryAPI('towatch', this.toWatchSearch), 1000);
       }
     }
   }
