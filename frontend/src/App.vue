@@ -14,12 +14,11 @@
 
       <!-- Home, MyList, Login -->
       <v-btn text rounded :to="{ name:'Home' }" exact><i class="mdi mdi-home pr-1"></i>Home</v-btn>
+      <v-btn text rounded :to="{ name: 'MyList' }" exact><i class="mdi mdi-format-list-checkbox pr-1"></i>My List</v-btn>
       <v-btn v-if="!$auth.isAuthenticated" text rounded @click="login()"><i class="mdi mdi-login-variant pr-1"></i>Login</v-btn>
 
 
       <div v-if="!$auth.loading">
-        <v-btn v-if="$auth.isAuthenticated" text rounded :to="{ name: 'MyList' }" exact><i class="mdi mdi-format-list-checkbox pr-1"></i>My List</v-btn>
-
         <v-menu offset-y>
           <template v-slot:activator="{ on }">
             <v-btn class="dropdown avatar-dropdown primary" v-on="on">

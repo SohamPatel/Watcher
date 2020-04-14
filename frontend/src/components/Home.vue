@@ -1,17 +1,43 @@
 <template>
-  <v-container>
-    <v-row class="text-center">
-      <v-carousel cycle hide-delimiters hide-delimiter-background show-arrows-on-hover>
-        <v-carousel-item v-for="(movie, i) in trendingMovies" :key="i">
-          <v-img :src="movie.poster" height="100%">
-            <v-row class="fill-height pb-12 title-background" align="end" justify="center">
-              <div class="font-weight-black movie-title">{{ movie.title }}</div>
+    <v-row class="text-center primary lighten-1">
+      <!-- <v-container class="text-left">
+        <h1>Trending Movies</h1>
+      </v-container> -->
+      <!-- <h1>Trending Movies</h1> -->
+      <v-carousel cycle hide-delimiters hide-delimiter-background :show-arrows="false" height="100%">
+        <v-container>
+          <v-carousel-item v-for="(movie, i) in trendingMovies" :key="i">
+            <v-row no-gutters>
+              <v-col cols="4">
+                <v-card class="pa-2" flat>
+                  <v-img :src="movie.poster"></v-img>
+                </v-card>
+              </v-col>
+              <v-col cols="8">
+                <v-card class="pa-2 pl-5 text-left" flat>
+                  <div class="font-weight-bold movie-title">
+                    {{ movie.title }}
+                  </div>
+                  <div>
+                    <v-chip v-for="genre in movie.genres" :key="genre" class="ma-2" color="pink" label text-color="white">
+                      {{genre}}
+                    </v-chip>
+                  </div>
+                  <div>
+                    {{ movie.overview }}
+                  </div>
+                </v-card>
+              </v-col>
             </v-row>
-          </v-img>
-        </v-carousel-item>
+            <!-- <v-img :src="movie.poster">
+              <v-row class="fill-height pb-12 title-background" align="end" justify="center">
+                <div class="font-weight-black movie-title">{{ movie.title }}</div>
+              </v-row>
+            </v-img> -->
+          </v-carousel-item>
+        </v-container>
       </v-carousel>
     </v-row>
-  </v-container>
 </template>
 
 <script>
@@ -41,10 +67,16 @@ import Vue from 'vue'
       // GET Tranding Movies
       Vue.http.get(TMDB_TRENGING_URL, headers).then(response => {
         response.body.results.forEach(movie => {
+          console.log(movie);
           let currMovie = {
             "title": movie.title,
-            "poster": this.TMDB_BASE_IMG_URL + movie.backdrop_path,
-            "popularity": movie.popularity
+            "overview": movie.overview,
+            "backdrop": this.TMDB_BASE_IMG_URL + movie.backdrop_path,
+            "poster": this.TMDB_BASE_IMG_URL + movie.poster_path,
+            "popularity": movie.popularity,
+            "rating": movie.vote_average,
+            "genres": movie.genre_ids,
+            "release_date": movie.release_date
           }
           this.trendingMovies.push(currMovie);
         })
@@ -63,11 +95,8 @@ import Vue from 'vue'
 
 <style scoped>
 .movie-title {
-  background-color: rgba(0, 0, 0, 0.15);
   width: 100%;
-  color: white;
   text-overflow: ellipsis;
-  font-family: 'Baloo Da 2', cursive;
   font-size: 3rem;
 }
 </style>
