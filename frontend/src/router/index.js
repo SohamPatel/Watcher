@@ -21,6 +21,9 @@ const routes = [
 ]
 
 const router = new VueRouter({
+  base: process.env.NODE_ENV === 'production'
+    ? '/Watcher/'
+    : '/', 
   mode: 'history',
   routes
 })
