@@ -243,7 +243,7 @@
         }
         
         if (type === 'watched') {
-          Vue.http.post(`http://${this.BACKEND_HOST}:${this.BACKEND_PORT}/api/watched`, post_data, headers).then(() => {
+          Vue.http.post(`${this.BACKEND_HOST}:${this.BACKEND_PORT}/api/watched`, post_data, headers).then(() => {
             // Don't add if the item was moved from towatch to watched
             if (this.watched.some(e => e.id === item.id) === false) {
               this.watched.unshift(item);
@@ -261,7 +261,7 @@
           });
 
         } else if (type === 'towatch') {
-          Vue.http.post(`http://${this.BACKEND_HOST}:${this.BACKEND_PORT}/api/towatch`, post_data, headers).then(() => {
+          Vue.http.post(`${this.BACKEND_HOST}:${this.BACKEND_PORT}/api/towatch`, post_data, headers).then(() => {
             // Don't add if the item was moved from toWatch to watched
             if (this.toWatch.some(e => e.id === item.id) === false) {
               this.toWatch.unshift(item);
@@ -293,7 +293,7 @@
         }
         
         if (type === 'watched') {
-          Vue.http.delete(`http://${this.BACKEND_HOST}:${this.BACKEND_PORT}/api/watched`, {body: remove_data, headers: headers.headers}).then(() => {
+          Vue.http.delete(`${this.BACKEND_HOST}:${this.BACKEND_PORT}/api/watched`, {body: remove_data, headers: headers.headers}).then(() => {
             this.watched = this.watched.filter((movie) => {
               return movie.id !== movie_id;
             });
@@ -304,7 +304,7 @@
           });
 
         } else if (type === 'towatch') {
-          Vue.http.delete(`http://${this.BACKEND_HOST}:${this.BACKEND_PORT}/api/towatch`, {body: remove_data, headers: headers.headers}).then(() => {
+          Vue.http.delete(`${this.BACKEND_HOST}:${this.BACKEND_PORT}/api/towatch`, {body: remove_data, headers: headers.headers}).then(() => {
             this.toWatch = this.toWatch.filter((movie) => {
               return movie.id !== movie_id;
             });
@@ -369,7 +369,7 @@
       }
       
       // GET Watched List
-      Vue.http.get(`http://${this.BACKEND_HOST}:${this.BACKEND_PORT}/api/watched`, headers).then(response => {
+      Vue.http.get(`${this.BACKEND_HOST}:${this.BACKEND_PORT}/api/watched`, headers).then(response => {
         // console.log(response);
         this.watched = response.body.watched;
         this.watched.sort(function (a, b) {
@@ -378,7 +378,7 @@
       });
 
       // GET ToWatch List
-      Vue.http.get(`http://${this.BACKEND_HOST}:${this.BACKEND_PORT}/api/towatch`, headers).then(response => {
+      Vue.http.get(`${this.BACKEND_HOST}:${this.BACKEND_PORT}/api/towatch`, headers).then(response => {
         // console.log(response);
         this.toWatch = response.body.towatch;
         this.toWatch.sort(function (a, b) {

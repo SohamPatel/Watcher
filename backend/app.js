@@ -21,10 +21,12 @@ const db = new sqlite3.Database('./Watcher.db', sqlite3.OPEN_READWRITE, (err) =>
     console.log('Connected to the Watcher database.');
 });
 
-
 app.use((request, response, next) => {
     console.log(request.method, request.path);
 
+    res.header("Access-Control-Allow-Origin", "*"); // update to match the domain you will make the request from
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    console.log(process.env);
     // Check for API_KEY
     let api_key = request.headers.api_key;
     if (!api_key) {
