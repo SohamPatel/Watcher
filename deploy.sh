@@ -1,7 +1,5 @@
 #!/usr/bin/env sh
 
-cd frontend
-
 # abort on errors
 set -e
 
